@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <set>
 #include <map>
 #include <fstream>
@@ -312,6 +313,31 @@ public:
         }
     }
 
+   // -------- Unreachable Code Removal --------
+    void removeUnreachableBlocks() {
+        std::set<int> visited;
+        std::queue<int> q;
+
+        if (blocks.empty()) return;
+        q.push(0);
+
+        while (!q.empty()) {
+            int id = q.front(); q.pop();
+            if (visited.count(id)) continue;
+            visited.insert(id);
+            for (int s : blocks[id].successors)
+                q.push(s);
+        }
+
+        blocks.erase(
+            std::remove_if(blocks.begin(), blocks.end(),
+                [&](const CFGBlock &b) {
+                    return visited.find(b.id) == visited.end();
+                }),
+            blocks.end()
+        );
+    }
+
     // -------- DOT --------
     void exportDOT(const std::string &file) {
         std::ofstream out(file);
@@ -345,6 +371,7 @@ public:
 
         visitor.constantFolding();
         visitor.constantPropagation();
+        visitor.removeUnreachableBlocks();
         visitor.runLiveness();
         visitor.deadCodeElim();
 
